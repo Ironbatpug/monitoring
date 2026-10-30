@@ -1,17 +1,41 @@
 package com.aldisued.iot.monitoring.controller;
 
+import com.aldisued.iot.monitoring.dto.AlertDto;
+import com.aldisued.iot.monitoring.dto.AlertResponseDto;
 import com.aldisued.iot.monitoring.service.AlertService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/alerts")
 public class AlertController {
 
-  private final AlertService alertService;
+    private final AlertService alertService;
 
-  public AlertController(AlertService alertService) {
-    this.alertService = alertService;
-  }
+    public AlertController(AlertService alertService) {
+        this.alertService = alertService;
+    }
 
+    @GetMapping("/latest")
+    public ResponseEntity<AlertDto> getLatestAlert(@RequestParam UUID sensorId) {
+        return alertService.findLastAlertBySensorId(sensorId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<AlertResponseDto> saveAlert(@RequestBody @Valid AlertDto alertDto) {
+        var alert = alertService.saveAlert(alertDto);
+        return ResponseEntity.ok(new AlertResponseDto(alert.getId(), alertDto.sensorId(),
+                alert.getMessage(), alert.getTimestamp()
+        ));
+    }
 }
